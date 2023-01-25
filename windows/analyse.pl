@@ -4,15 +4,17 @@
 # Usage:
 #
 #	
-#	./analyse.pl [TimeDelta] [Log directry] [filename]
+#	./analyse.pl [TimeDelta] [Log directry] [Head part of log filename]
 #	./analyse.pl 0 . userlog
 #
 #	filename	log ディレクトリ直下のファイル名にマッチする文字列を指定する
 
+use strict;
+use warnings;
 use Cwd;
 use Time::Local 'timelocal';
 
-my ($sec, $min, $hour, $mday, $month, $year, $wday, $stime);
+my ($msec, $sec, $min, $hour, $mday, $month, $year, $wday, $stime) = (0,0,0,0,0,0,0,0,0);
 my @dirs = ();
 my %lines = ();
 my $msg;
@@ -24,20 +26,21 @@ if ($#ARGV < 2){
 
 my $cwd = Cwd::getcwd();
 opendir(IN, $cwd."/".$ARGV[1]);
-@files = readdir(IN) or die ("Error : Could not open directory");
+my @files = readdir(IN) or die ("Error : Could not open directory");
 closedir(IN);
+chdir $ARGV[1];
 
 # Node2 - Node1 = timedelta:
 my $timedelta = $ARGV[0];
 my $timeadjust = 0;
 my $tab="\t";
 
-foreach $dir (sort @files){
+foreach my $dir (sort @files){
 	if (( -d $dir ) && ($dir ne ".") && ($dir ne "..")){
 		opendir(IN, "$dir/log") or next;
 		my @files2 = readdir(IN) or next;
 		push @dirs, $dir;
-		foreach $file (sort @files2) {
+		foreach my $file (sort @files2) {
 			if($file =~ /^$ARGV[2]/){
 				open(IN2, "$dir/log/$file");
 				# push @dirs, $dir;
@@ -46,9 +49,9 @@ foreach $dir (sort @files){
 					next if (!/^\d\d\d\d\/\d\d\/\d\d \d\d:\d\d:\d\d\.\d\d\d/);
 					chop;
 					# s/($&)(.*)/$1 $2/;
-					@tmp = split(/[\s,]/);
-					$mdate	= shift(@tmp);
-					$mtime	= shift(@tmp);
+					my @tmp = split(/[\s,]/);
+					my $mdate	= shift(@tmp);
+					my $mtime	= shift(@tmp);
 					$msg	= join(' ', @tmp);
 
 ##----------
@@ -93,9 +96,9 @@ foreach $dir (sort @files){
 					$msec	=~ s/^....\/..\/.. ..:..:...(...)/$1/;
 					$month	-= 1;
 					# $year	+= 100;
-					$epoch = timelocal($sec, $min, $hour, $mday, $month, $year);
+					my $epoch = timelocal($sec, $min, $hour, $mday, $month, $year);
 					$epoch -= $timeadjust;
-					$line = sprintf("$epoch $dir$tab$msg\n");
+					my $line = sprintf("$epoch $dir$tab$msg\n");
 					push @{$lines{$dir}}, $line;
 				}
 				close(IN2);
@@ -139,7 +142,7 @@ while(1){
 	$timecurr = $line;
 	$timecurr =~ s/^(\d+) (.*)/$1/;
 	if($timeprev == 0){
-		$timeprev = $timecurr;
+		$timeprev = $timecurr - ($timecurr % 60) + 60;
 	}
 	my $msg = $2;
 
