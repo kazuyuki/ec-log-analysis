@@ -74,6 +74,12 @@ foreach my $dir (sort @files){
 					# 無駄なメッセージを行ごと消す
 					next if ($msg =~ /Cluster Disk Resource Performance Data can't be collected because a performance monitor is too numerous./);
 
+					# Log level を取得する
+					my $lvl = "";
+					if ($msg =~ s/(INFO |WARN |ERROR)//) {
+						$lvl = $1;
+					}
+
 ##----------
 ##
 ## Cut
@@ -98,7 +104,7 @@ foreach my $dir (sort @files){
 					# $year	+= 100;
 					my $epoch = timelocal($sec, $min, $hour, $mday, $month, $year);
 					$epoch -= $timeadjust;
-					my $line = sprintf("$epoch $dir$tab$msg\n");
+					my $line = sprintf("$epoch $dir\t$lvl$tab$msg\n");
 					push @{$lines{$dir}}, $line;
 				}
 				close(IN2);
